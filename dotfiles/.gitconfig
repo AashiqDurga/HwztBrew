@@ -1,0 +1,48 @@
+# =============================================================================
+# ~/.gitconfig — git configuration (symlinked from the mac-setup repo)
+# EDIT the [user] section with YOUR name and email before first commit.
+# =============================================================================
+[user]
+	name = Aashiq Durga
+	email = aashiqdurga@gmail.com
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = true
+
+[push]
+	autoSetupRemote = true
+
+[fetch]
+	prune = true
+
+[core]
+	editor = code --wait
+	pager = delta
+
+[interactive]
+	diffFilter = delta --color-only
+
+[delta]
+	navigate = true
+	line-numbers = true
+
+[merge]
+	conflictstyle = zdiff3
+
+[diff]
+	colorMoved = default
+
+[color]
+	ui = auto
+
+[alias]
+	st = status
+	co = checkout
+	br = branch
+	ci = commit
+	lg = log --oneline --graph --decorate --all
+	last = log -1 HEAD
+	unstage = reset HEAD --
