@@ -9,6 +9,33 @@ Two layers of isolation, both set up by this repo. Use them together:
 
 The Bash-sandbox config lives in [`../claude/settings.json`](../claude/settings.json) and is merged into `~/.claude/settings.json` by [`../claude-code.sh`](../claude-code.sh). This page covers the Docker Sandbox side.
 
+## Quick start — how to use it
+
+The Mac setup already installed the `sbx` + `claude-code` CLIs and wrote the sandbox config. So:
+
+**One-time:**
+
+```sh
+sbx login        # sign in to Docker Sandboxes (needs a free Docker account)
+claude           # run once on the host and sign in to Claude Code
+```
+
+**Every project** — `cd` into the repo and run `ccx` (a shell function from your dotfiles; open a new terminal if it isn't found yet):
+
+```sh
+cd ~/code/my-project
+ccx              # boots a per-project microVM and runs Claude, fully autonomous
+```
+
+What to expect:
+
+- **First `ccx` in a repo:** the sandbox installs your plugins + MCP servers, then prompts you to authorize each remote MCP server (supabase, vercel, clerk, linear, notion). Do it once — it persists for that project.
+- **After that:** `ccx` reuses the same sandbox. Run it again in another terminal for a second session in the same VM.
+- **Prompts for one run instead of autonomous:** `CCX_PROMPT=1 ccx`.
+- **Throw a sandbox away:** `sbx rm my-project` (your files on the host are untouched).
+
+The rest of this page explains how that works and how to customize it.
+
 ## Mental model
 
 - A **sandbox** is a per-project microVM — think of it as a disposable clone of your Mac. It replaces "my host" as the security boundary.

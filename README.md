@@ -1,6 +1,6 @@
 # HwztBrew
 
-One-command setup for a fresh Mac (Apple Silicon / M-series). Installs Homebrew, all my CLI tools, dev apps, and everyday apps, sets up language runtimes, links my dotfiles, and applies sensible macOS defaults.
+One-command setup for a fresh Mac (Apple Silicon / M-series). Installs Homebrew, all my CLI tools, dev apps, and everyday apps, sets up language runtimes, links my dotfiles, applies sensible macOS defaults, and sets up a **sandboxed Claude Code environment**.
 
 ## Quick start (brand-new Mac — nothing installed)
 
@@ -32,6 +32,20 @@ cd ~/HwztBrew && ./setup.sh
 5. **Dotfiles** — symlinks `.zshrc`, `.gitconfig`, `.aliases` from `dotfiles/` into your home folder.
 6. **macOS defaults** — runs [`macos.sh`](./macos.sh): Finder, Dock, keyboard, screenshots, trackpad tweaks.
 7. **Claude Code sandbox** — runs [`claude-code.sh`](./claude-code.sh): writes the always-on Bash-sandbox config into `~/.claude/settings.json`. The `claude-code` CLI and Docker Sandboxes (`sbx`) install from the [`Brewfile`](./Brewfile). See [`claude-sandbox/`](./claude-sandbox/) for how it all works, and [Docker Sandboxes docs](https://docs.docker.com/ai/sandboxes/) for the underlying microVM tech.
+
+## Claude Code sandbox
+
+Yes — this repo **also sets up a sandboxed [Claude Code](https://code.claude.com/docs) environment**, so a fresh Mac is ready to run agents safely with no extra config. Two layers, least-privilege:
+
+- **Bash sandbox (always on)** — every host `claude` session runs its shell commands inside macOS Seatbelt, configured in [`claude/settings.json`](./claude/settings.json).
+- **Docker Sandboxes (the default)** — the `ccx` command launches Claude inside a disposable, per-project microVM ([`sbx`](https://docs.docker.com/ai/sandboxes/)). Inside it Claude runs **fully autonomous** but can't touch anything outside the project + an allow-listed set of domains. Your usual plugins + MCP servers are auto-loaded into each sandbox.
+
+```sh
+cd ~/code/some-project
+ccx          # autonomous Claude, isolated in a microVM
+```
+
+How it works, the per-project workflow, and customizing the sandbox: **[`claude-sandbox/`](./claude-sandbox/)**.
 
 ## Customizing
 
