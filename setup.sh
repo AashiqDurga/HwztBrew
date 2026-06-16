@@ -51,6 +51,14 @@ fi
 log "Updating Homebrew"
 brew update >/dev/null && ok "up to date"
 
+# ---- 2b. Trust third-party taps used by the Brewfile -----------------------
+# Newer Homebrew refuses casks/formulae from untrusted third-party taps. The
+# docker/tap tap provides the `sbx` (Docker Sandboxes) cask, so trust it before
+# bundling. (`|| true` keeps this a no-op on older Homebrew without the gate.)
+log "Trusting docker/tap (for sbx)"
+brew tap docker/tap >/dev/null 2>&1 || true
+brew trust docker/tap >/dev/null 2>&1 && ok "docker/tap trusted" || skip "brew trust unavailable (older Homebrew) — continuing"
+
 # ---- 3. Install everything in the Brewfile ---------------------------------
 log "Installing packages from Brewfile (this takes a while)"
 brew bundle --file="$REPO_DIR/Brewfile"
@@ -111,6 +119,13 @@ link_dotfile() {
 link_dotfile ".zshrc"
 link_dotfile ".gitconfig"
 link_dotfile ".aliases"
+
+# ---- 5b. Claude Code sandbox -----------------------------------------------
+log "Claude Code sandbox"
+if [[ -f "$REPO_DIR/claude-code.sh" ]]; then
+  bash "$REPO_DIR/claude-code.sh"
+  ok "Claude Code sandbox configured"
+fi
 
 # ---- 6. macOS system defaults ----------------------------------------------
 log "Applying macOS defaults"
