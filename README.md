@@ -31,6 +31,7 @@ cd ~/HwztBrew && ./setup.sh
 4. **Language runtimes** — installs Node (LTS) and Python via [mise](https://mise.jdx.dev).
 5. **Dotfiles** — symlinks `.zshrc`, `.gitconfig`, `.aliases` from `dotfiles/` into your home folder.
 6. **macOS defaults** — runs [`macos.sh`](./macos.sh): Finder, Dock, keyboard, screenshots, trackpad tweaks.
+7. **Claude Code sandbox** — runs [`claude-code.sh`](./claude-code.sh): writes the always-on Bash-sandbox config into `~/.claude/settings.json`. The `claude-code` CLI and Docker Sandboxes (`sbx`) install from the [`Brewfile`](./Brewfile). See [`claude-sandbox/`](./claude-sandbox/) for how it all works, and [Docker Sandboxes docs](https://docs.docker.com/ai/sandboxes/) for the underlying microVM tech.
 
 ## Customizing
 
@@ -41,6 +42,7 @@ cd ~/HwztBrew && ./setup.sh
 | Shell config & aliases | `dotfiles/.zshrc`, `dotfiles/.aliases` |
 | Git name/email | `dotfiles/.gitconfig` |
 | macOS system tweaks | `macos.sh` |
+| Claude Code sandbox rules | `claude/settings.json` (Bash sandbox) · `claude-sandbox/kit.yaml` (Docker Sandbox) |
 
 ## After running
 
@@ -48,6 +50,7 @@ cd ~/HwztBrew && ./setup.sh
 - `gh auth login` to connect GitHub.
 - Sign in to 1Password, Slack, Chrome, Spotify, etc.
 - Some macOS tweaks need a logout/restart to fully apply.
+- **Claude Code sandbox:** `sbx login` (Docker Sandboxes — needs a free Docker account), then run `claude` once to sign in. Start sandboxed project sessions with `ccx` (autonomous; the kit auto-loads your plugins + MCP servers). First time in each repo, authorize the OAuth MCP servers once. See [`claude-sandbox/README.md`](./claude-sandbox/README.md) for the full per-project workflow (MCP auth, worktrees, customizing the kit).
 
 ## Keeping it updated
 

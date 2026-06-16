@@ -1,0 +1,92 @@
+# =============================================================================
+# kit.yaml — starter Docker Sandbox kit for Claude Code project work.
+#
+# A "kit" is applied when a sandbox is created: it picks the base image,
+# installs tools, sets the network allowlist, and declares credential rules.
+# COPY this into a project (e.g. ./claude-sandbox/) and tailor it, then:
+#
+#     sbx kit validate ./claude-sandbox/
+#     sbx run --kit ./claude-sandbox/ --name <project> claude
+#
+# This is a STARTING POINT — validate and adjust per project. It has NOT been
+# run end-to-end against a live sandbox; expect to tweak domains/tools on the
+# first run. Docs: https://docs.docker.com/ai/sandboxes/customize/
+# =============================================================================
+
+schemaVersion: "1"
+kind: sandbox
+name: claude-default
+displayName: "Claude Code — default project sandbox"
+description: "Node + Python toolchain with nested Docker, plus the usual MCP servers + plugins."
+
+sandbox:
+  # shell-docker = a shell base plus a Docker daemon (lets the agent build/run
+  # containers inside the sandbox). Use docker/sandbox-templates:shell if you
+  # don't need nested Docker.
+  image: "docker/sandbox-templates:shell-docker"
+  aiFilename: CLAUDE.md
+
+commands:
+  # Runtime install steps. user "1000" is the agent's UID — installs land in
+  # the agent's home rather than as root.
+  install:
+    - command: "sudo apt-get update && sudo apt-get install -y nodejs npm python3 python3-pip"
+      user: "1000"
+      description: "Node + Python (for npx/uvx-based MCP servers & tooling)"
+    # Replicate the host's plugins + MCP servers. Inlined (not an external
+    # script) so the kit is self-contained and works as a GLOBAL default, with
+    # no dependency on the project containing claude-sandbox/. Mirrors
+    # setup-claude.sh — keep the two in sync. `|| true` per item so a timing
+    # hiccup (claude not yet provisioned) doesn't abort sandbox creation.
+    - command: |
+        for p in claude-md-management frontend-design context7 superpowers feature-dev code-simplifier ralph-loop playwright security-guidance serena; do
+          claude plugin install "$p@claude-plugins-official" --scope user || true
+        done
+        for s in "supabase|https://mcp.supabase.com/mcp" "vercel|https://mcp.vercel.com" "clerk|https://mcp.clerk.com/mcp" "linear-server|https://mcp.linear.app/mcp" "notion|https://mcp.notion.com/mcp"; do
+          claude mcp add --scope user --transport http "${s%%|*}" "${s##*|}" || true
+        done
+        claude mcp add --scope user trigger -- npx trigger.dev@4.4.3 mcp || true
+      user: "1000"
+      description: "Install MCP servers + plugins (host setup replicated)"
+
+network:
+  # Default-deny egress — list ONLY what the agent needs. Keep it narrow: the
+  # proxy allow-lists by hostname and does not inspect TLS, so a broad entry is
+  # a potential data-exfiltration path.
+  allowedDomains:
+    # --- Claude Code core ---
+    - "api.anthropic.com:443"            # Claude Code → the model (REQUIRED)
+    # --- package registries (stdio MCP servers, plugins, deps) ---
+    - "registry.npmjs.org:443"           # npx (e.g. trigger.dev MCP)
+    - "pypi.org:443"                     # pip / uv
+    - "files.pythonhosted.org:443"
+    # --- plugin marketplace: anthropics/claude-plugins-official ---
+    - "github.com:443"
+    - "api.github.com:443"
+    - "codeload.github.com:443"
+    - "raw.githubusercontent.com:443"
+    - "objects.githubusercontent.com:443"
+    # --- remote (http) MCP servers — OAuth, no stored keys ---
+    - "mcp.supabase.com:443"
+    - "mcp.vercel.com:443"
+    - "mcp.context7.com:443"             # served by the context7 plugin
+    - "mcp.clerk.com:443"
+    - "mcp.linear.app:443"
+    - "mcp.notion.com:443"
+    # NOTE: each server's OAuth flow may redirect to its provider's auth host
+    # (supabase.com, vercel.com, clerk.com, linear.app, notion.so, …). If
+    # authorization fails on first run, add that host here.
+
+# No secrets needed: the remote MCP servers above use OAuth, and the local
+# (stdio) ones don't require keys. If you later add a key-based MCP server,
+# register it on the host once and reference it here:
+#   sbx secret set-custom -g --host <api-host> --env <ENV_VAR> --value "$KEY"
+# environment:
+#   proxyManaged:
+#     - SOME_MCP_API_TOKEN
+
+agentContext: |
+  You are running inside a disposable, per-project Docker Sandbox microVM. The
+  project directory is bind-mounted from the host (edits appear on the host
+  live). Network egress is restricted to an allowlist; if a command can't reach
+  a host, that domain isn't allowed — surface it rather than working around it.

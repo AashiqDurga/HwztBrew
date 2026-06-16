@@ -7,6 +7,7 @@
 
 # ----- Taps (extra package sources) ------------------------------------------
 tap "homebrew/bundle"
+tap "docker/tap"      # source for the sbx (Docker Sandboxes) CLI
 
 # ----- Core CLI tools --------------------------------------------------------
 brew "git"            # version control
@@ -45,6 +46,12 @@ cask "docker"               # Docker Desktop
 cask "postman"              # API client
 cask "ghostty"              # fast GPU terminal (optional alt to iterm2)
 cask "claude"               # Claude desktop app
+
+# ----- Claude Code sandboxing ------------------------------------------------
+# CLI + isolation. Config is applied by claude-code.sh; details in
+# claude-sandbox/README.md.
+cask "claude-code"          # Claude Code CLI (the `claude` command; cask = manual `brew upgrade`)
+cask "sbx"                  # Docker Sandboxes — per-project microVM (the `ccx` command wraps it)
 
 # ----- Everyday apps (casks) -------------------------------------------------
 cask "arc"                 # Arc browser

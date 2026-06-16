@@ -40,5 +40,5 @@ rm -rf "$tmp"
 
 log "Running setup"
 cd "$DEST"
-chmod +x setup.sh macos.sh
+chmod +x setup.sh macos.sh claude-code.sh
 exec ./setup.sh

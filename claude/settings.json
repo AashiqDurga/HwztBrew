@@ -1,0 +1,9 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "excludedCommands": ["gh *", "docker *", "gcloud *", "terraform *"],
+    "filesystem": {
+      "denyRead": ["~/.ssh", "~/.aws"]
+    }
+  }
+}
