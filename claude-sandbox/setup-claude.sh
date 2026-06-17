@@ -8,8 +8,8 @@
 #
 #     bash claude-sandbox/setup-claude.sh
 #
-# The kit (kit.yaml) also tries to run this at sandbox creation; this script is
-# the reliable manual fallback if that timing doesn't line up.
+# The kit (spec.yaml) inlines these same commands at sandbox creation; this
+# script is the identical manual fallback if that step didn't take.
 #
 # Idempotent and SECRET-FREE: the remote MCP servers use OAuth — you authorize
 # each once on first use (`claude` will prompt), and the named sandbox keeps

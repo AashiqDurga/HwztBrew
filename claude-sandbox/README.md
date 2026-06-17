@@ -9,32 +9,43 @@ Two layers of isolation, both set up by this repo. Use them together:
 
 The Bash-sandbox config lives in [`../claude/settings.json`](../claude/settings.json) and is merged into `~/.claude/settings.json` by [`../claude-code.sh`](../claude-code.sh). This page covers the Docker Sandbox side.
 
-## Quick start — how to use it
+## Install
 
-The Mac setup already installed the `sbx` + `claude-code` CLIs and wrote the sandbox config. So:
+There are two ways in, depending on whether you want the whole repo or just the sandbox.
 
-**One-time:**
+### Already ran the full HwztBrew setup?
 
-```sh
-sbx login        # sign in to Docker Sandboxes (needs a free Docker account)
-claude           # run once on the host and sign in to Claude Code
-```
+If you used the `curl … | bash` one-liner or `./setup.sh` from the [main README](../README.md), **you already have all of this** — the `claude-code` + `sbx` CLIs, the Bash-sandbox config, the status line, the kit, and the `ccx` command are installed. Nothing else to do here.
 
-**Every project** — `cd` into the repo and run `ccx` (a shell function from your dotfiles; open a new terminal if it isn't found yet):
+Just complete the one-time steps and start using it:
 
 ```sh
-cd ~/code/my-project
-ccx              # boots a per-project microVM and runs Claude, fully autonomous
+sbx login                         # sign in to Docker Sandboxes (free account)
+bash claude-sandbox/policy.sh     # set the recommended "balanced" network policy
+cd <a project> && ccx             # autonomous Claude in a per-project microVM
 ```
 
-What to expect:
+Then jump to [Everyday workflow](#everyday-workflow).
 
-- **First `ccx` in a repo:** the sandbox installs your plugins + MCP servers, then prompts you to authorize each remote MCP server (supabase, vercel, clerk, linear, notion). Do it once — it persists for that project.
-- **After that:** `ccx` reuses the same sandbox. Run it again in another terminal for a second session in the same VM.
-- **Prompts for one run instead of autonomous:** `CCX_PROMPT=1 ccx`.
-- **Throw a sandbox away:** `sbx rm my-project` (your files on the host are untouched).
+### Just want the sandbox (no Mac setup)?
 
-The rest of this page explains how that works and how to customize it.
+To sandbox Claude Code on a machine you already use — **without** adopting the rest of this repo (Brewfile, dotfiles, macOS defaults) — one command does it:
+
+```sh
+git clone https://github.com/AashiqDurga/HwztBrew.git
+cd HwztBrew && ./claude-sandbox/install.sh
+```
+
+It installs the `claude-code` + `sbx` CLIs via Homebrew, writes the always-on Bash-sandbox config, installs the kit, and wires the `ccx` command into your shell. Then the same one-time steps:
+
+```sh
+exec $SHELL                       # reload your shell (picks up ccx)
+sbx login                         # sign in to Docker Sandboxes (free account)
+bash claude-sandbox/policy.sh     # set the recommended "balanced" network policy
+cd <a project> && ccx             # autonomous Claude in a per-project microVM
+```
+
+Requires macOS + [Homebrew](https://brew.sh). The rest of this page explains how it all works.
 
 ## Mental model
 
@@ -47,7 +58,7 @@ The rest of this page explains how that works and how to customize it.
 Docker Sandboxes ([`sbx`](https://docs.docker.com/ai/sandboxes/)) runs each sandbox as a **microVM** — its own Linux kernel, filesystem, and network stack, plus its own Docker daemon. The boundary between the agent and your Mac is a hardware-level VM, not just process permissions. The mechanics worth knowing:
 
 - **Workspace = a live bind-mount (direct mode).** Your project dir is mounted read-write; edits the agent makes appear on your host instantly. Nothing else is mounted, so the agent literally can't see `~/.ssh`, other repos, or the rest of your home. (There's also a *clone mode* — repo mounted read-only, agent works on an in-VM copy.)
-- **Network is default-deny via a host-side proxy.** Outbound traffic is blocked except the hostnames you allow-list in [`kit.yaml`](./kit.yaml). The proxy matches by hostname and doesn't inspect TLS, so keep the list narrow — a broad domain is a possible exfiltration path.
+- **Network is default-deny via a host-side proxy.** Outbound traffic is blocked except the hostnames you allow-list in [`spec.yaml`](./spec.yaml). The proxy matches by hostname and doesn't inspect TLS, so keep the list narrow — a broad domain is a possible exfiltration path.
 - **Credentials never enter the VM.** That same proxy holds your tokens and injects them into outbound requests, so a compromised sandbox can't read the raw secret. Claude Code's own session token stays on the host too.
 - **Persistent yet disposable.** Named sandboxes (what `ccx` makes) keep their state — packages, auth, config — across runs; `sbx rm` throws one away without touching your host files.
 
@@ -55,7 +66,7 @@ For the full detail, see Docker's [security & isolation model](https://docs.dock
 
 ## Everyday workflow
 
-`claude` stays the raw host binary (Bash-sandbox protected, prompts on). The default is **`ccx`** — a shell function (in [`../dotfiles/.aliases`](../dotfiles/.aliases)) that runs Claude inside a per-project Docker Sandbox, **fully autonomous**:
+`claude` stays the raw host binary (Bash-sandbox protected, prompts on). The default is **`ccx`** — a shell function ([`ccx.sh`](./ccx.sh), installed to `~/.config/claude-sandbox/` and sourced by your shell) that runs Claude inside a per-project Docker Sandbox, **fully autonomous**:
 
 ```sh
 cd ~/code/my-project
@@ -67,7 +78,7 @@ ccx          # = sbx run --kit <kit> --name my-project claude --dangerously-skip
 `ccx` runs with `--dangerously-skip-permissions` on purpose: the microVM is the safety boundary, so Claude works without permission prompts. That's the whole reason to use Tier 3 — let it go. It's contained, **not** risk-free:
 
 - The mounted project is your **real code on the host** — the agent can rewrite it. It's all git; review the diff and revert.
-- It can exfiltrate **what's in the sandbox** (your project) via any **allowed** domain — keep [`kit.yaml`](./kit.yaml)'s allowlist narrow.
+- It can exfiltrate **what's in the sandbox** (your project) via any **allowed** domain — keep [`spec.yaml`](./spec.yaml)'s allowlist narrow.
 
 It can't touch anything outside the mounted project + allowed domains (not `~/.ssh`, not other repos, not the open internet). For a one-off run *with* prompts, use `CCX_PROMPT=1 ccx`.
 
@@ -92,15 +103,15 @@ An MCP server is **config + binary + network + secret**, and each lives on a dif
 | Piece | Where it goes |
 |---|---|
 | Which servers to launch | a project-scoped **`.mcp.json`** at your repo root (travels with the bind-mounted workspace) |
-| The server's binary/runtime (node, `uvx`, …) | the kit — `commands.install` in [`kit.yaml`](./kit.yaml), or a template image |
-| The domains it calls | `network.allowedDomains` in `kit.yaml` (default-deny egress) |
+| The server's binary/runtime (node, `uvx`, …) | the kit — `commands.install` in [`spec.yaml`](./spec.yaml), or a template image |
+| The domains it calls | `network.allowedDomains` in `spec.yaml` (default-deny egress) |
 | Its API key | `sbx secret set-custom` / `environment.proxyManaged` |
 
 So: declare the server in `.mcp.json`, make sure the kit installs its runtime, allow-list its API host, and register its key as a secret. Then `ccx` "just works" with MCP and no prompts.
 
 ### Your replicated setup
 
-The [`kit.yaml`](./kit.yaml) installs the host's tooling inside a sandbox at **user scope** (so it's there for every session in that project) **automatically on first creation**. [`setup-claude.sh`](./setup-claude.sh) is the identical set of commands as a manual fallback — run it once inside a sandbox if the kit step didn't take (the named sandbox keeps the result):
+The [`spec.yaml`](./spec.yaml) installs the host's tooling inside a sandbox at **user scope** (so it's there for every session in that project) **automatically on first creation**. [`setup-claude.sh`](./setup-claude.sh) is the identical set of commands as a manual fallback — run it once inside a sandbox if the kit step didn't take (the named sandbox keeps the result):
 
 ```sh
 bash claude-sandbox/setup-claude.sh
@@ -117,7 +128,7 @@ Both install:
 
 - **`vercel-plugin`** isn't auto-installed — on the host its marketplace came from a local directory, not a public URL. The Vercel **MCP server** still gives the agent Vercel access; add the plugin manually if you want its skills too.
 - **`playwright`** needs browser dependencies in the image to actually drive a browser — add them to the kit if you use it.
-- **OAuth redirects** may hit a provider host not in the allowlist on first authorize; the [`kit.yaml`](./kit.yaml) `network` block notes which to add.
+- **OAuth redirects** may hit a provider host not in the allowlist on first authorize; the [`spec.yaml`](./spec.yaml) `network` block notes which to add.
 
 ## Git worktrees
 
@@ -126,9 +137,29 @@ Only the directory you mount is visible in the sandbox — parent dirs are **not
 - create them **inside** the repo: `git worktree add .worktrees/feature`, or
 - mount the **parent** explicitly: `sbx run --name proj <parent-dir> claude` so siblings fall inside a mounted path.
 
+## Network policy
+
+`sbx` asks for a default network posture the first time you run a sandbox. Pick **Balanced** — *default-deny, with common dev sites (AI services, package registries) allowed.* It's Docker's own recommended default and the right fit for letting Claude work without throwing away egress control. Avoid **Open** (`allow-all`, no boundary); reserve **Locked down** (`deny-all`) for pointing Claude at code you don't trust.
+
+Set it reproducibly — and skip the interactive prompt — on a new machine, after `sbx login` and **before** your first sandbox:
+
+```sh
+bash claude-sandbox/policy.sh         # = sbx policy set-default balanced
+```
+
+Inspect or adjust anytime:
+
+```sh
+sbx policy ls                         # the effective rules
+sbx policy allow network <host:443>   # add a machine-wide allow
+sbx policy reset                      # clear and start over (needed to change the default)
+```
+
+This is the **machine baseline**. Per-project egress is tightened in [`spec.yaml`](./spec.yaml)'s `network.allowedDomains`; the two layer, and a `deny` always wins over an `allow`.
+
 ## Customizing the environment
 
-Edit [`kit.yaml`](./kit.yaml): add tools under `commands.install`, allow-list domains under `network.allowedDomains`, swap the base image. Validate with `sbx kit validate ./claude-sandbox/`, then `sbx run --kit ./claude-sandbox/ --name <project> claude`.
+Edit [`spec.yaml`](./spec.yaml): add tools under `commands.install`, allow-list domains under `network.allowedDomains`, swap the base image. Validate with `sbx kit validate ./claude-sandbox/`, then `sbx run --kit ./claude-sandbox/ --name <project> claude`.
 
 ## Learn more
 
@@ -136,7 +167,7 @@ Edit [`kit.yaml`](./kit.yaml): add tools under `commands.install`, allow-list do
 
 - [Docker Sandboxes overview](https://www.docker.com/products/docker-sandboxes/) — what it is and why it exists
 - [Docs · Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) — install, usage, sandbox lifecycle
-- [Docs · Customize (kits & templates)](https://docs.docker.com/ai/sandboxes/customize/) — the `kit.yaml` schema this folder uses
+- [Docs · Customize (kits & templates)](https://docs.docker.com/ai/sandboxes/customize/) — the `spec.yaml` schema this folder uses
 - [Docs · Security & isolation](https://docs.docker.com/ai/sandboxes/security/) — the microVM boundary and credential proxy
 
 **Claude Code sandboxing — how the tiers compare:**

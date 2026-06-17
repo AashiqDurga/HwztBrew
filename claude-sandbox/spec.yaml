@@ -1,5 +1,5 @@
 # =============================================================================
-# kit.yaml — starter Docker Sandbox kit for Claude Code project work.
+# spec.yaml — starter Docker Sandbox kit for Claude Code project work.
 #
 # A "kit" is applied when a sandbox is created: it picks the base image,
 # installs tools, sets the network allowlist, and declares credential rules.
@@ -48,6 +48,14 @@ commands:
         claude mcp add --scope user trigger -- npx trigger.dev@4.4.3 mcp || true
       user: "1000"
       description: "Install MCP servers + plugins (host setup replicated)"
+    # Mark this as a ccx sandbox and show a startup banner so the user knows
+    # they're sandboxed + autonomous, plus a rotating motivational quote.
+    # companyAnnouncements is plain text shown at startup (no script needed).
+    - command: |
+        touch "$HOME/.ccx-sandbox"
+        python3 -c 'import json,pathlib; p=pathlib.Path.home()/".claude"/"settings.json"; p.parent.mkdir(parents=True,exist_ok=True); d=json.loads(p.read_text()) if p.exists() else {}; d["companyAnnouncements"]=["🦀 You are in a ccx sandbox — autonomous & isolated. Claude can touch this project and nothing else.","Make it work, make it right, make it fast.","First, solve the problem. Then write the code.","Simplicity is the soul of efficiency.","Talk is cheap. Show me the code."]; p.write_text(json.dumps(d,indent=2))' || true
+      user: "1000"
+      description: "Sandbox marker + startup banner & quotes"
 
 network:
   # Default-deny egress — list ONLY what the agent needs. Keep it narrow: the
