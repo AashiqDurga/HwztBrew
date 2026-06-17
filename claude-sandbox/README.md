@@ -9,6 +9,44 @@ Two layers of isolation, both set up by this repo. Use them together:
 
 The Bash-sandbox config lives in [`../claude/settings.json`](../claude/settings.json) and is merged into `~/.claude/settings.json` by [`../claude-code.sh`](../claude-code.sh). This page covers the Docker Sandbox side.
 
+## Install
+
+There are two ways in, depending on whether you want the whole repo or just the sandbox.
+
+### Already ran the full HwztBrew setup?
+
+If you used the `curl … | bash` one-liner or `./setup.sh` from the [main README](../README.md), **you already have all of this** — the `claude-code` + `sbx` CLIs, the Bash-sandbox config, the status line, the kit, and the `ccx` command are installed. Nothing else to do here.
+
+Just complete the one-time steps and start using it:
+
+```sh
+sbx login                         # sign in to Docker Sandboxes (free account)
+bash claude-sandbox/policy.sh     # set the recommended "balanced" network policy
+cd <a project> && ccx             # autonomous Claude in a per-project microVM
+```
+
+Then jump to [Everyday workflow](#everyday-workflow).
+
+### Just want the sandbox (no Mac setup)?
+
+To sandbox Claude Code on a machine you already use — **without** adopting the rest of this repo (Brewfile, dotfiles, macOS defaults) — one command does it:
+
+```sh
+git clone https://github.com/AashiqDurga/HwztBrew.git
+cd HwztBrew && ./claude-sandbox/install.sh
+```
+
+It installs the `claude-code` + `sbx` CLIs via Homebrew, writes the always-on Bash-sandbox config, installs the kit, and wires the `ccx` command into your shell. Then the same one-time steps:
+
+```sh
+exec $SHELL                       # reload your shell (picks up ccx)
+sbx login                         # sign in to Docker Sandboxes (free account)
+bash claude-sandbox/policy.sh     # set the recommended "balanced" network policy
+cd <a project> && ccx             # autonomous Claude in a per-project microVM
+```
+
+Requires macOS + [Homebrew](https://brew.sh). The rest of this page explains how it all works.
+
 ## Mental model
 
 - A **sandbox** is a per-project microVM — think of it as a disposable clone of your Mac. It replaces "my host" as the security boundary.
@@ -28,7 +66,7 @@ For the full detail, see Docker's [security & isolation model](https://docs.dock
 
 ## Everyday workflow
 
-`claude` stays the raw host binary (Bash-sandbox protected, prompts on). The default is **`ccx`** — a shell function (in [`../dotfiles/.aliases`](../dotfiles/.aliases)) that runs Claude inside a per-project Docker Sandbox, **fully autonomous**:
+`claude` stays the raw host binary (Bash-sandbox protected, prompts on). The default is **`ccx`** — a shell function ([`ccx.sh`](./ccx.sh), installed to `~/.config/claude-sandbox/` and sourced by your shell) that runs Claude inside a per-project Docker Sandbox, **fully autonomous**:
 
 ```sh
 cd ~/code/my-project
