@@ -24,20 +24,41 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   echo "This script is for macOS only."; exit 1
 fi
 
+# ---- 0b. Admin access (ask once, up front) ---------------------------------
+# Homebrew and some casks need sudo. Ask for the password once now and keep the
+# sudo timestamp warm in the background, so the long install runs unattended
+# instead of stopping to prompt you partway through.
+SUDO_KEEPALIVE_PID=""
+if [[ -t 0 ]]; then
+  log "Admin access"
+  echo "    You'll be asked for your Mac password once, now — then it's hands-off."
+  echo "    (Do NOT run this whole script with sudo; just answer this prompt.)"
+  if sudo -v; then
+    ( while true; do sudo -n true; sleep 60; kill -0 "$$" 2>/dev/null || exit; done ) &
+    SUDO_KEEPALIVE_PID=$!
+    ok "authorized for this run"
+  else
+    skip "no sudo now — Homebrew may prompt you later"
+  fi
+fi
+trap '[[ -n "$SUDO_KEEPALIVE_PID" ]] && kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true' EXIT
+
 # ---- 1. Xcode Command Line Tools -------------------------------------------
 log "Xcode Command Line Tools"
 if xcode-select -p >/dev/null 2>&1; then
   skip "already installed"
 else
-  xcode-select --install
-  echo "    A dialog opened — finish the install, then re-run ./setup.sh"
-  exit 0
+  xcode-select --install 2>/dev/null || true
+  echo "    A system dialog opened — click Install and accept the licence."
+  echo "    Waiting for it to finish (this can take several minutes)…"
+  until xcode-select -p >/dev/null 2>&1; do sleep 5; done
+  ok "installed"
 fi
 
 # ---- 2. Homebrew ------------------------------------------------------------
 log "Homebrew"
 if ! command -v brew >/dev/null 2>&1; then
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   ok "installed"
 else
   skip "already installed"
@@ -61,8 +82,13 @@ brew trust docker/tap >/dev/null 2>&1 && ok "docker/tap trusted" || skip "brew t
 
 # ---- 3. Install everything in the Brewfile ---------------------------------
 log "Installing packages from Brewfile (this takes a while)"
-brew bundle --file="$REPO_DIR/Brewfile"
-ok "Brewfile complete"
+# Don't let one failed/renamed package abort the whole setup — keep going so
+# dotfiles, the sandbox, and macOS defaults still get applied. Re-run to retry.
+if brew bundle --file="$REPO_DIR/Brewfile"; then
+  ok "Brewfile complete"
+else
+  skip "some packages didn't install — continuing (re-run ./setup.sh to retry them)"
+fi
 
 # ---- 4. Language runtimes via mise -----------------------------------------
 # mise installs and pins language versions. Edit the list to taste.
@@ -142,6 +168,8 @@ cat <<'EOF'
     1. Restart your terminal (or run: exec zsh)
     2. Sign in to apps: 1Password, Slack, Chrome, Spotify…
     3. Authenticate GitHub:  gh auth login
-    4. Some macOS tweaks need a logout/restart to fully apply.
+    4. Claude Code sandbox:  sbx login, then run `claude` once to sign in.
+       Start sandboxed project sessions with `ccx`  (see claude-sandbox/README.md)
+    5. Some macOS tweaks need a logout/restart to fully apply.
 
 EOF

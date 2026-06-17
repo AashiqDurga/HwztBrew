@@ -4,17 +4,24 @@ One-command setup for a fresh Mac (Apple Silicon / M-series). Installs Homebrew,
 
 ## Quick start (brand-new Mac — nothing installed)
 
-Open **Terminal** and paste one line:
+Open **Terminal** and paste this one line — **do not put `sudo` in front of it.** Homebrew refuses to run as root; the script asks for your password itself, only when it needs it:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AashiqDurga/HwztBrew/main/bootstrap.sh | bash
 ```
 
-This needs **only `curl`**, which ships with every Mac — no git, no Homebrew, nothing to install first. It downloads the repo as a tarball and runs everything for you.
+It needs **only `curl`** (ships with every Mac) — no git, no Homebrew first. It downloads the repo to `~/HwztBrew` and runs the whole setup. **What to expect, in order:**
 
-That's it. It's safe to re-run any time — every step checks before acting and your existing dotfiles are backed up, not overwritten.
+1. **Your Mac password — once, up front.** Setup asks for your **login password** at the very start (Homebrew and a few apps need admin rights) and keeps it active, so everything after runs unattended. Type it — the screen stays blank as you type, that's normal — and press Return.
+2. **Xcode Command Line Tools dialog** *(brand-new Macs only).* A system dialog pops up (compilers/git that Homebrew needs). Click **Install** and accept the licence; the script **waits**, then continues on its own — nothing to re-run.
+3. **The long part — unattended.** It installs everything from the [`Brewfile`](./Brewfile), language runtimes, your dotfiles, macOS defaults, and the Claude Code sandbox. Grab a coffee.
 
-> First run may pause to install Xcode Command Line Tools. Finish that dialog, then paste the same line again.
+Safe to re-run any time — every step checks before acting, and your existing dotfiles are backed up, not overwritten.
+
+> **Stuck at Homebrew with "Need sudo access / stdin is not a TTY"?** You're on an older `bootstrap.sh` that can't pass the password prompt through the `curl | bash` pipe. The repo was still downloaded, so just finish with the local copy:
+> ```sh
+> cd ~/HwztBrew && ./setup.sh
+> ```
 
 ### Alternative: if you already have git
 

@@ -41,4 +41,13 @@ rm -rf "$tmp"
 log "Running setup"
 cd "$DEST"
 chmod +x setup.sh macos.sh claude-code.sh
-exec ./setup.sh
+
+# Reattach the controlling terminal before handing off. We arrived via
+# `curl … | bash`, so our stdin is the downloaded script — NOT a TTY. Without
+# this, interactive prompts (Homebrew's sudo password, etc.) can't be entered
+# and setup fails with "Need sudo access / stdin is not a TTY".
+if [ -e /dev/tty ]; then
+  exec ./setup.sh </dev/tty
+else
+  exec ./setup.sh
+fi
