@@ -49,7 +49,7 @@ cd ~/HwztBrew && ./setup.sh
 | Shell config & aliases | `dotfiles/.zshrc`, `dotfiles/.aliases` |
 | Git name/email | `dotfiles/.gitconfig` |
 | macOS system tweaks | `macos.sh` |
-| Claude Code sandbox rules | `claude/settings.json` (Bash sandbox) · `claude-sandbox/kit.yaml` (Docker Sandbox) |
+| Claude Code sandbox rules | `claude/settings.json` (Bash sandbox) · `claude-sandbox/spec.yaml` (Docker Sandbox) |
 
 ## After running
 
@@ -57,7 +57,7 @@ cd ~/HwztBrew && ./setup.sh
 - `gh auth login` to connect GitHub.
 - Sign in to 1Password, Slack, Chrome, Spotify, etc.
 - Some macOS tweaks need a logout/restart to fully apply.
-- **Claude Code sandbox:** `sbx login` (Docker Sandboxes — needs a free Docker account), then run `claude` once to sign in. Start sandboxed project sessions with `ccx` (autonomous; the kit auto-loads your plugins + MCP servers). First time in each repo, authorize the OAuth MCP servers once. See [`claude-sandbox/README.md`](./claude-sandbox/README.md) for the full per-project workflow (MCP auth, worktrees, customizing the kit).
+- **Claude Code sandbox:** `sbx login` (Docker Sandboxes — needs a free Docker account), then `bash claude-sandbox/policy.sh` to set the network policy, then run `claude` once to sign in. Start sandboxed project sessions with `ccx` (autonomous; the kit auto-loads your plugins + MCP servers). First time in each repo, authorize the OAuth MCP servers once. See [`claude-sandbox/README.md`](./claude-sandbox/README.md) for the full per-project workflow (network policy, MCP auth, worktrees, customizing the kit).
 
 ## Keeping it updated
 

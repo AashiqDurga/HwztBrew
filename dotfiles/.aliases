@@ -47,14 +47,20 @@ ccx() {
   command -v sbx >/dev/null 2>&1 || {
     echo "sbx not installed — run: brew install docker/tap/sbx" >&2; return 1
   }
+  # Make sure we're signed in to Docker Sandboxes first — otherwise `sbx run`
+  # dies with a raw 401. Sign in once if needed.
+  if sbx ls 2>&1 | grep -qiE 'not authenticated|sign in to docker|no valid user session'; then
+    echo "ccx: not signed in to Docker Sandboxes — opening login…" >&2
+    sbx login || { echo "ccx: sbx login failed" >&2; return 1; }
+  fi
   local root name kit
   root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   name="$(basename "$root")"
   # Apply the kit (tooling + MCP servers + plugins + network allowlist):
   # a project-local one if present, else the global default that setup installs.
-  if [[ -f "$root/claude-sandbox/kit.yaml" ]]; then
+  if [[ -f "$root/claude-sandbox/spec.yaml" ]]; then
     kit="$root/claude-sandbox"
-  elif [[ -f "$HOME/.config/claude-sandbox/kit.yaml" ]]; then
+  elif [[ -f "$HOME/.config/claude-sandbox/spec.yaml" ]]; then
     kit="$HOME/.config/claude-sandbox"
   fi
   local kitarg=(); [[ -n "$kit" ]] && kitarg=(--kit "$kit")
