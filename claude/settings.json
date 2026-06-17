@@ -3,7 +3,18 @@
     "enabled": true,
     "excludedCommands": ["gh *", "docker *", "gcloud *", "terraform *"],
     "filesystem": {
-      "denyRead": ["~/.ssh", "~/.aws"]
+      "denyRead": [
+        "~/.ssh",
+        "~/.aws",
+        "~/.config/gh",
+        "~/.config/gcloud",
+        "~/.npmrc",
+        "~/.docker/config.json",
+        "~/.kube",
+        "~/.gnupg",
+        "~/.netrc",
+        "~/.terraform.d"
+      ]
     }
   }
 }

@@ -6,7 +6,7 @@
 # =============================================================================
 
 # ----- Taps (extra package sources) ------------------------------------------
-tap "homebrew/bundle"
+# (brew bundle is built into Homebrew core now — no homebrew/bundle tap needed.)
 tap "docker/tap"      # source for the sbx (Docker Sandboxes) CLI
 
 # ----- Core CLI tools --------------------------------------------------------
@@ -42,7 +42,7 @@ brew "starship"               # cross-shell prompt (used instead of an OMZ theme
 # ----- GUI dev apps (casks) --------------------------------------------------
 cask "visual-studio-code"   # editor  (swap for "cursor" if you prefer)
 cask "iterm2"               # terminal
-cask "docker"               # Docker Desktop
+cask "docker-desktop"       # Docker Desktop (was "docker" — renamed by Homebrew)
 cask "postman"              # API client
 cask "ghostty"              # fast GPU terminal (optional alt to iterm2)
 cask "claude"               # Claude desktop app
