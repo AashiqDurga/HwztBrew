@@ -57,6 +57,12 @@ else
   ok "wrote ~/.claude/settings.json"
 fi
 
+# ---- Install the status line script (referenced by settings.json) ----------
+if [[ -f "$REPO_DIR/claude/statusline.sh" ]]; then
+  install -m 0755 "$REPO_DIR/claude/statusline.sh" "$DEST_DIR/statusline.sh"
+  ok "installed status line → ~/.claude/statusline.sh"
+fi
+
 # ---- Install the Docker Sandbox kit to a stable global path -----------------
 # `ccx` (in .aliases) points `sbx run --kit` here when a project has no local
 # ./claude-sandbox/ of its own — so every project gets the same kit (tooling,

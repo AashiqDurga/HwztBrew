@@ -33,40 +33,7 @@ alias reload='exec zsh'
 alias path='echo $PATH | tr ":" "\n"'
 alias ip='ipconfig getifaddr en0'
 
-# Claude Code — sandbox-by-default.
-#   `claude` = raw host binary (still wrapped by the always-on Bash sandbox via
-#              ~/.claude/settings.json; permission prompts stay on).
-#   `ccx`    = start a session inside a per-project Docker Sandbox microVM,
-#              running FULLY AUTONOMOUS (--dangerously-skip-permissions). The VM
-#              is the safety boundary, so Claude just does its thing — it can't
-#              reach anything outside the mounted project + allowed domains.
-# Named after the git repo so re-running reuses the same sandbox. Args pass
-# through, e.g. `ccx --continue`. Set CCX_PROMPT=1 to keep prompts for one run.
-# See claude-sandbox/README.md.
-ccx() {
-  command -v sbx >/dev/null 2>&1 || {
-    echo "sbx not installed — run: brew install docker/tap/sbx" >&2; return 1
-  }
-  local root name kit
-  root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-  name="$(basename "$root")"
-  # Apply the kit (tooling + MCP servers + plugins + network allowlist):
-  # a project-local one if present, else the global default that setup installs.
-  if [[ -f "$root/claude-sandbox/kit.yaml" ]]; then
-    kit="$root/claude-sandbox"
-  elif [[ -f "$HOME/.config/claude-sandbox/kit.yaml" ]]; then
-    kit="$HOME/.config/claude-sandbox"
-  fi
-  local kitarg=(); [[ -n "$kit" ]] && kitarg=(--kit "$kit")
-  local perm=(--dangerously-skip-permissions)
-  [[ -n "${CCX_PROMPT:-}" ]] && perm=()
-  # sbx grammar (verified via `sbx run --help`):
-  #   sbx run [flags] AGENT [PATH...] [-- AGENT_ARGS...]
-  # Workspace defaults to the current dir; AGENT args go AFTER the `--`.
-  local agentargs=("${perm[@]}" "$@")
-  if (( ${#agentargs[@]} )); then
-    ( builtin cd "$root" && sbx run "${kitarg[@]}" --name "$name" claude -- "${agentargs[@]}" )
-  else
-    ( builtin cd "$root" && sbx run "${kitarg[@]}" --name "$name" claude )
-  fi
-}
+# Claude Code sandbox — the `ccx` command (run Claude in a per-project Docker
+# Sandbox microVM, fully autonomous). The function's single source lives in the
+# kit and is installed to ~/.config/claude-sandbox/ccx.sh by claude-code.sh.
+[ -f ~/.config/claude-sandbox/ccx.sh ] && source ~/.config/claude-sandbox/ccx.sh

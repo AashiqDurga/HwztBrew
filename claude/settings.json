@@ -1,4 +1,8 @@
 {
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline.sh"
+  },
   "sandbox": {
     "enabled": true,
     "excludedCommands": ["gh *", "docker *", "gcloud *", "terraform *"],
